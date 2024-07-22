@@ -2,10 +2,11 @@ package Gestor_Academico;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
-public class GestorAcademico {
-    private ArrayList<Estudiante> estudiantes;
-    private ArrayList<Curso> cursos;
+public class GestorAcademico implements ServiciosAcademicosL {
+    private List<Estudiante> estudiantes;
+    private List<Curso> cursos;
     private HashMap<Curso, ArrayList<Estudiante>> inscripciones;
 
     // Constructor
@@ -15,13 +16,50 @@ public class GestorAcademico {
         inscripciones = new HashMap<>();
     }
 
-    // Métodos para gestionar estudiantes
-    public void agregarEstudiante(Estudiante estudiante) {
-        estudiantes.add(estudiante);
+    @Override
+    public void matricularEstudiante(Estudiante estudiante) {
+        if (!estudiantes.contains(estudiante)) {
+            estudiantes.add(estudiante);
+        }
     }
 
-    public void eliminarEstudiante(int id) {
-        estudiantes.removeIf(estudiante -> estudiante.getId() == id);
+    @Override
+    public void agregarCurso(Curso curso) {
+        if (!cursos.contains(curso)) {
+            cursos.add(curso);
+        }
+    }
+
+    @Override
+    public void inscribirEstudianteCurso(Estudiante estudiante, int idCurso) throws EstudianteYaInscritoException {
+        Curso curso = buscarCurso(idCurso);
+        if (curso != null) {
+            if (!inscripciones.containsKey(curso)) {
+                inscripciones.put(curso, new ArrayList<>());
+            }
+            List<Estudiante> inscritos = inscripciones.get(curso);
+            if (inscritos.contains(estudiante)) {
+                throw new EstudianteYaInscritoException("El estudiante ya está inscrito en el curso.");
+            } else {
+                inscritos.add(estudiante);
+            }
+        }
+    }
+
+    @Override
+    public void desinscribirEstudianteCurso(int idEstudiante, int idCurso) throws EstudianteNoInscritoEnCursoException {
+        Curso curso = buscarCurso(idCurso);
+        Estudiante estudiante = buscarEstudiante(idEstudiante);
+        if (curso != null && estudiante != null) {
+            List<Estudiante> inscritos = inscripciones.get(curso);
+            if (inscritos == null || !inscritos.contains(estudiante)) {
+                throw new EstudianteNoInscritoEnCursoException("El estudiante no está inscrito en el curso.");
+            } else {
+                inscritos.remove(estudiante);
+            }
+        } else {
+            throw new EstudianteNoInscritoEnCursoException("Curso o estudiante no encontrado.");
+        }
     }
 
     public Estudiante buscarEstudiante(int id) {
@@ -33,15 +71,6 @@ public class GestorAcademico {
         return null;
     }
 
-    // Métodos para gestionar cursos
-    public void agregarCurso(Curso curso) {
-        cursos.add(curso);
-    }
-
-    public void eliminarCurso(int id) {
-        cursos.removeIf(curso -> curso.getId() == id);
-    }
-
     public Curso buscarCurso(int id) {
         for (Curso curso : cursos) {
             if (curso.getId() == id) {
@@ -49,14 +78,6 @@ public class GestorAcademico {
             }
         }
         return null;
-    }
-
-    // Métodos para gestionar inscripciones
-    public void inscribirEstudianteEnCurso(Estudiante estudiante, Curso curso) {
-        if (!inscripciones.containsKey(curso)) {
-            inscripciones.put(curso, new ArrayList<>());
-        }
-        inscripciones.get(curso).add(estudiante);
     }
 
     public ArrayList<Estudiante> obtenerEstudiantesInscritos(Curso curso) {
